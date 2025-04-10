@@ -1,0 +1,6 @@
+# Project
+tests/
+
+# Python
+*.pyc
+__pycache__/
