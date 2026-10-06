@@ -9,6 +9,7 @@ Detect motion in video from a live feed or from a file
 import os
 import sys
 import threading
+import multiprocessing
 import getopt
 import configparser
 import logging
@@ -16,37 +17,21 @@ import imutils
 import cv2
 from . import datatypes
 
-class VideoFeed(object):
-    """ Represents an individual video feed
+class FeedProcessor(multiprocessing.Process):
+    """ Video feed processor
     """
-    def __init__(self, video_source, signaller, debug=False, config=None, logger=None):
-        def main():
-            """ Main logic for video feed
-            """
-            while not self._shutdown:
-                self._processing_thread = threading.Thread(target=self.process, daemon=True)
-                self._processing_thread.start()
-                self._processing_thread.join()
-            
-        
+    def __init__(self, parent, video_source, debug=None, config=None, logger=None):
         self.debug = debug
         self.config = config
         self.logger = logger
-        
+        self.parent = parent
         self.video_source = video_source
-        self.signaller = signaller
-        self.signal_monitor = datatypes.SignalMonitor(self, self.signaller)
-        self.id_no = self.signal_monitor.id_no
-        self._do_processing = False
-        self._show_feed = False
-        self._shutdown = False
-        
-        threading.Thread(target=main, daemon=True).start()
 
-    def process(self):
-        """ Main video processing loop
-        """
-
+    def run(self):
+        while not getattr(self.parent, "_do_processing"):
+            pass
+        #self.logger.debug(f"VideoFeed object with ID {self.id_no} has entered it's process() method from processing thread started by object's main logic thread")
+        #self.logger.debug(f"Current context of VideoFeed object with ID {self.id_no} from inside process() method: _do_processing={self._do_processing}, _show_feed={self._show_feed}, _shutdown={self._shutdown}")
         # Unpack various values related to the motion detection algorithm from the configuration data
         sensitivity = int(self.config["DEFAULT"]["sensitivity"])
         reference_frame_reset_interval = int(self.config["DEFAULT"]["reference_frame_reset_interval"])
@@ -58,7 +43,8 @@ class VideoFeed(object):
         reference_frame = None
         reference_frames_taken = 0
         c = 0
-        while self._do_processing:
+        while getattr(self.parent, "_do_processing"):
+            #self.logger.debug(f"VideoFeed object with ID {self.id_no} has entered processing loop of it's process() method")
             _, frame = vs.read()
 
             # If the frame is empty, video has ended and this loop should be broken
@@ -109,7 +95,8 @@ class VideoFeed(object):
                 self.logger.debug(f"Motion detected in frame {frame_number} in {areas_with_motion} area(s)")
                 
             # Display video
-            if self._show_feed: 
+            if self._show_feed:
+                #self.logger.debug(f"VideoFeed object with ID {self.id_no} has entered video feed display block of it's process() method") 
                 cv2.imshow(f"Bebop's Motion Detection Program ({self.video_source[0]} <{self.video_source[1]}>)", frame)
                 # DEBUGGING
                 #if self.debug:
@@ -125,6 +112,45 @@ class VideoFeed(object):
                     break
 
         # Exit from the function cleanly
+        #self.logger.debug(f"VideoFeed object with ID {self.id_no} has left the main processing loop of it's process() method")
         if self._show_feed:
             cv2.destroyAllWindows()
         return None
+        
+
+class VideoFeed(object):
+    """ Represents an individual video feed
+    """
+    def __init__(self, video_source, signaller, debug=False, config=None, logger=None):
+        self.debug = debug
+        self.config = config
+        self.logger = logger
+        
+        self.video_source = video_source
+        self.signaller = signaller
+        self.signal_monitor = datatypes.SignalMonitor(self, self.signaller)
+        self.id_no = self.signal_monitor.id_no
+        self.feed_processor = FeedProcessor(self, self.video_source, debug=self.debug, config=self.config, logger=self.logger)
+        self._feed_processor = multiprocessing.Process(target=self.feed_processor)
+        self._do_processing = False
+        self._show_feed = False
+        self._shutdown = False
+
+        self.logger.debug(f"Initialized new VideoFeed object for {self.video_source[0]} source (reflink: {self.video_source[1]}) assigned ID: {self.id_no}")
+
+    def process(self):
+        """ Main video processing loop
+        """
+        def _thread():
+            """ Shutdown monitor thread
+            """
+            while not self._shutdown:
+                pass
+            self._feed_processor.terminate()
+            self._feed_processor.join()
+            return None
+            
+        self._feed_processor.start()
+        threading.Thread(target=_thread, daemon=True).start()
+        return self._feed_processor.is_alive()
+        

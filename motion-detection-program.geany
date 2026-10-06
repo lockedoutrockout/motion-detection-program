@@ -28,10 +28,10 @@ long_line_behaviour=1
 long_line_column=72
 
 [files]
-current_page=0
-FILE_NAME_0=91;Python;0;EUTF-8;0;1;0;%2Fhome%2Fbrandon%2FDocuments%2FCoding%20Projects%2FPublic%2Fmotion-detection-program%2Fmotion-detection-program.py;0;4
-FILE_NAME_1=0;Python;0;EUTF-8;0;1;0;%2Fhome%2Fbrandon%2FDocuments%2FCoding%20Projects%2FPublic%2Fmotion-detection-program%2Flib%2Fvideofeeds.py;0;4
-FILE_NAME_2=0;Python;0;EUTF-8;0;1;0;%2Fhome%2Fbrandon%2FDocuments%2FCoding%20Projects%2FPublic%2Fmotion-detection-program%2Flib%2Fdatatypes.py;0;4
+current_page=1
+FILE_NAME_0=1138;Python;0;EUTF-8;0;1;0;%2Fhome%2Fbrandon%2FDocuments%2FCoding%20Projects%2FPublic%2Fmotion-detection-program%2Fmotion-detection-program.py;0;4
+FILE_NAME_1=5832;Python;0;EUTF-8;0;1;0;%2Fhome%2Fbrandon%2FDocuments%2FCoding%20Projects%2FPublic%2Fmotion-detection-program%2Flib%2Fvideofeeds.py;0;4
+FILE_NAME_2=3253;Python;0;EUTF-8;0;1;0;%2Fhome%2Fbrandon%2FDocuments%2FCoding%20Projects%2FPublic%2Fmotion-detection-program%2Flib%2Fdatatypes.py;0;4
 FILE_NAME_3=0;Python;0;EUTF-8;0;1;0;%2Fhome%2Fbrandon%2FDocuments%2FCoding%20Projects%2FPublic%2Fmotion-detection-program%2Flib%2Fexceptions.py;0;4
 
 [VTE]
@@ -48,3 +48,6 @@ filetypes=Python;
 EX_01_LB=Execute (with webcam as source)
 EX_01_CM=python3 motion-detection-program.py --debug webcam+0
 EX_01_WD=/home/brandon/Documents/Coding Projects/Public/motion-detection-program/
+PythonFT_02_LB=_Lint
+PythonFT_02_CM=pycodestyle --max-line-length=80 "%f"
+PythonFT_02_WD=

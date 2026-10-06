@@ -18,7 +18,7 @@ from lib import videofeeds, datatypes, exceptions
 def main(debug, config, logger, sources):
     """ Main function. Contains core program logic
     """
-    signaller = datatypes.Signaller()
+    signaller = datatypes.Signaller(debug=debug, logger=logger)
     video_feeds = []
     logger.info(f"Establishing video feed connections...")
     for video_source in sources:
@@ -33,6 +33,7 @@ def main(debug, config, logger, sources):
         video_feeds.append(video_feed)
         logger.info(f"\t...Done! Video feed from {video_source[0]} source (reflink: {video_source[1]}) loaded and assigned ID number: {video_feed.id_no}...")
     logger.info(f"...Done! All video feed connections have been established!")
+    input("Press [ENTER] to continue...")
     signaller.signal("START")
     signaller.signal("ENABLEDISPLAY")
     input("Press [ENTER] to continue...")
