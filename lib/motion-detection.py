@@ -10,102 +10,106 @@ import os
 import sys
 import getopt
 import configparser
+import logging
 import imutils
 import cv2
+from datatypes import Signaller, SignalMonitor
 
-def main(debugging, config, video_source):
-	""" Main program logic
+class VideoFeed(object):
+    """ Represents an individual video feed
+    """
+    def __init__(self, config, signaller, debug=False):
+        self.debug = debug
+        self.config = config
+        self.signaller = signaller
+        self.signal_monitor = SignalMonitor(self.signaller)
+        self.id_no = self.signal_monitor.id_no
+        self.logger = logging.getLogger()
+        self.process = False
 
-	Arguments:
-		debugging - bool - Show debugging messages if true
-		config - ConfigParser object - Parsable configuration file data
-		video_source - tuple - Describes the type of video and provides its source
+    def process(self):
+        """ Main video processing loop
+        """
 
-	Returns:
-		None
-	"""
+        # Unpack various values related to the motion detection algorithm from the configuration data
+        sensitivity = int(self.config["DEFAULT"]["sensitivity"])
+        reference_frame_reset_interval = int(self.config["DEFAULT"]["reference_frame_reset_interval"])
 
-	# Unpack various values related to the motion detection algorithm from the configuration data
-	sensitivity = int(config["DEFAULT"]["sensitivity"])
-	reference_frame_reset_interval = int(config["DEFAULT"]["reference_frame_reset_interval"])
+        # Open the video source and go through it frame by frame
+        vs = cv2.VideoCapture(self.video_source[1])
+        frame_number = 0
+        frames_with_motion = [] # [(frame_number, original_frame)]
+        reference_frame = None
+        reference_frames_taken = 0
+        c = 0
+        while True:
+            _, frame = vs.read()
 
-	# Open the video source and go through it frame by frame
-	vs = cv2.VideoCapture(video_source[1])
-	frame_number = 0
-	frames_with_motion = [] # [(frame_number, original_frame)]
-	reference_frame = None
-	reference_frames_taken = 0
-	c = 0
-	while True:
-		_, frame = vs.read()
+            # If the frame is empty, video has ended and this loop should be broken
+            if frame is None:
+                break
+            else:
+                frame_number = frame_number + 1
+                c = c + 1
+                original_frame = frame
 
-		# If the frame is empty, video has ended and this loop should be broken
-		if frame is None:
-			break
-		else:
-			frame_number = frame_number + 1
-			c = c + 1
-			original_frame = frame
+            # Resize, gray, and blur the frame for easier processing
+            frame = imutils.resize(frame, width=500)
+            pframe = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            pframe = cv2.GaussianBlur(pframe, (21, 21), 0)
 
-		# Resize, gray, and blur the frame for easier processing
-		frame = imutils.resize(frame, width=500)
-		pframe = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-		pframe = cv2.GaussianBlur(pframe, (21, 21), 0)
+            # Take the initial reference frame, or set a new one if at the interval
+            if reference_frame is None or c == reference_frame_reset_interval:
+                reference_frame = pframe
+                reference_frames_taken = reference_frames_taken + 1
+                if c == reference_frame_reset_interval:
+                    c = 0
 
-		# Take the initial reference frame, or set a new one if at the interval
-		if reference_frame is None or c == reference_frame_reset_interval:
-			reference_frame = pframe
-			reference_frames_taken = reference_frames_taken + 1
-			if c == reference_frame_reset_interval:
-				c = 0
+            # Calculate the difference between the current frame and the reference
+            delta = cv2.absdiff(reference_frame, pframe)
+            threshold = cv2.threshold(delta, 25, 255, cv2.THRESH_BINARY)[1]
 
-		# Calculate the difference between the current frame and the reference
-		delta = cv2.absdiff(reference_frame, pframe)
-		threshold = cv2.threshold(delta, 25, 255, cv2.THRESH_BINARY)[1]
+            # Find contours on the threshold image
+            threshold = cv2.dilate(threshold, None, iterations=2)
+            contours = cv2.findContours(threshold.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            contours = imutils.grab_contours(contours)
 
-		# Find contours on the threshold image
-		threshold = cv2.dilate(threshold, None, iterations=2)
-		contours = cv2.findContours(threshold.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-		contours = imutils.grab_contours(contours)
+            # Loop through all found contours and check if any breach the motion detection sensitivity threshold
+            areas_with_motion = 0
+            for contour in contours:
+                # Pass by contours that are smaller than the set sensitivity level
+                if cv2.contourArea(contour) < sensitivity:
+                    continue
 
-		# Loop through all found contours and check if any breach the motion detection sensitivity threshold
-		areas_with_motion = 0
-		for contour in contours:
-			# Pass by contours that are smaller than the set sensitivity level
-			if cv2.contourArea(contour) < sensitivity:
-				continue
+                areas_with_motion = areas_with_motion + 1
+                frames_with_motion.append((frame_number, original_frame))
 
-			areas_with_motion = areas_with_motion + 1
-			frames_with_motion.append((frame_number, original_frame))
+                # Draw a box around detected motion
+                (x, y, w, h) = cv2.boundingRect(contour)
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-			# Draw a box around detected motion
-			(x, y, w, h) = cv2.boundingRect(contour)
-			cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            # Log detected motion
+            if areas_with_motion > 0:
+                self.logger.debug(f"Motion detected in frame {frame_number} in {areas_with_motion} area(s)")
+                
+            # Display video 
+            cv2.imshow(f"Bebop's Motion Detection Program ({self.video_source[0]} <{self.video_source[1]}>)", frame)
+            # DEBUGGING
+            #if self.debug:
+            #    cv2.imshow("[DEBUG] Bebop's Motion Detection Program - REFERENCE FRAME", reference_frame)
+            #    cv2.imshow("[DEBUG] Bebop's Motion Detection Program - IMAGE THRESHOLD", threshold)
+            #    cv2.imshow("[DEBUG] Bebop's Motion Detection Program - FRAME DELTA", delta)
 
-		# Display console output and video feed
-		if areas_with_motion > 0:
-			if areas_with_motion > 1:
-				print("[!!!] Motion detected in frame {0} in {1} areas!".format(frame_number, areas_with_motion))
-			else:
-				print("[!!!] Motion detected in frame {0} in {1} area!".format(frame_number, areas_with_motion))
+            # Wait for keypresses
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord("p"):
+                input("[i] Motion detection processing paused. Press [ENTER] to continue...")
+            elif key == ord("q"):
+                break
 
-		cv2.imshow("Bebop's Motion Detection Program ({})".format(video_source[0]), frame)
-		# DEBUGGING
-		if debugging == True:
-			cv2.imshow("[DEBUG] Bebop's Motion Detection Program - REFERENCE FRAME", reference_frame)
-			cv2.imshow("[DEBUG] Bebop's Motion Detection Program - IMAGE THRESHOLD", threshold)
-			cv2.imshow("[DEBUG] Bebop's Motion Detection Program - FRAME DELTA", delta)
-
-		# Wait for keypresses
-		key = cv2.waitKey(1) & 0xFF
-		if key == ord("p"):
-			input("[i] Motion detection processing paused. Press [ENTER] to continue...")
-		elif key == ord("q"):
-			break
-
-	# Exit from the function cleanly
-	cv2.destroyAllWindows()
-	return None
+        # Exit from the function cleanly
+        cv2.destroyAllWindows()
+        return None
 
 # Begin execution
 if __name__ == "__main__":

@@ -1,0 +1,50 @@
+[editor]
+line_wrapping=false
+line_break_column=72
+auto_continue_multiline=true
+
+[file_prefs]
+final_new_line=true
+ensure_convert_new_lines=false
+strip_trailing_spaces=false
+replace_tabs=false
+
+[indentation]
+indent_width=4
+indent_type=0
+indent_hard_tab_width=8
+detect_indent=false
+detect_indent_width=false
+indent_mode=2
+
+[project]
+name=motion-detection-program
+base_path=/home/brandon/Documents/Coding Projects/Public/motion-detection-program
+description=
+file_patterns=
+
+[long line marker]
+long_line_behaviour=1
+long_line_column=72
+
+[files]
+current_page=0
+FILE_NAME_0=91;Python;0;EUTF-8;0;1;0;%2Fhome%2Fbrandon%2FDocuments%2FCoding%20Projects%2FPublic%2Fmotion-detection-program%2Fmotion-detection-program.py;0;4
+FILE_NAME_1=0;Python;0;EUTF-8;0;1;0;%2Fhome%2Fbrandon%2FDocuments%2FCoding%20Projects%2FPublic%2Fmotion-detection-program%2Flib%2Fvideofeeds.py;0;4
+FILE_NAME_2=0;Python;0;EUTF-8;0;1;0;%2Fhome%2Fbrandon%2FDocuments%2FCoding%20Projects%2FPublic%2Fmotion-detection-program%2Flib%2Fdatatypes.py;0;4
+FILE_NAME_3=0;Python;0;EUTF-8;0;1;0;%2Fhome%2Fbrandon%2FDocuments%2FCoding%20Projects%2FPublic%2Fmotion-detection-program%2Flib%2Fexceptions.py;0;4
+
+[VTE]
+last_dir=/home/brandon/Documents/Coding Projects/Public/motion-detection-program
+
+[build-menu]
+EX_00_LB=Execute (show help)
+EX_00_CM=python3 motion-detection-program.py --help
+EX_00_WD=/home/brandon/Documents/Coding Projects/Public/motion-detection-program/
+PythonFT_00_LB=_Compile
+PythonFT_00_CM=python3 -m py_compile "%f"
+PythonFT_00_WD=
+filetypes=Python;
+EX_01_LB=Execute (with webcam as source)
+EX_01_CM=python3 motion-detection-program.py --debug webcam+0
+EX_01_WD=/home/brandon/Documents/Coding Projects/Public/motion-detection-program/
