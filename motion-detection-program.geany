@@ -5,9 +5,9 @@ auto_continue_multiline=true
 
 [file_prefs]
 final_new_line=true
-ensure_convert_new_lines=false
-strip_trailing_spaces=false
-replace_tabs=false
+ensure_convert_new_lines=true
+strip_trailing_spaces=true
+replace_tabs=true
 
 [indentation]
 indent_width=4
@@ -29,9 +29,9 @@ long_line_column=72
 
 [files]
 current_page=1
-FILE_NAME_0=1138;Python;0;EUTF-8;0;1;0;%2Fhome%2Fbrandon%2FDocuments%2FCoding%20Projects%2FPublic%2Fmotion-detection-program%2Fmotion-detection-program.py;0;4
-FILE_NAME_1=5832;Python;0;EUTF-8;0;1;0;%2Fhome%2Fbrandon%2FDocuments%2FCoding%20Projects%2FPublic%2Fmotion-detection-program%2Flib%2Fvideofeeds.py;0;4
-FILE_NAME_2=3253;Python;0;EUTF-8;0;1;0;%2Fhome%2Fbrandon%2FDocuments%2FCoding%20Projects%2FPublic%2Fmotion-detection-program%2Flib%2Fdatatypes.py;0;4
+FILE_NAME_0=1696;Python;0;EUTF-8;0;1;0;%2Fhome%2Fbrandon%2FDocuments%2FCoding%20Projects%2FPublic%2Fmotion-detection-program%2Fmotion-detection-program.py;0;4
+FILE_NAME_1=1736;Python;0;EUTF-8;0;1;0;%2Fhome%2Fbrandon%2FDocuments%2FCoding%20Projects%2FPublic%2Fmotion-detection-program%2Flib%2Fvideofeeds.py;0;4
+FILE_NAME_2=2716;Python;0;EUTF-8;0;1;0;%2Fhome%2Fbrandon%2FDocuments%2FCoding%20Projects%2FPublic%2Fmotion-detection-program%2Flib%2Fdatatypes.py;0;4
 FILE_NAME_3=0;Python;0;EUTF-8;0;1;0;%2Fhome%2Fbrandon%2FDocuments%2FCoding%20Projects%2FPublic%2Fmotion-detection-program%2Flib%2Fexceptions.py;0;4
 
 [VTE]

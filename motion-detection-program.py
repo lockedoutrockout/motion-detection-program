@@ -33,6 +33,10 @@ def main(debug, config, logger, sources):
         video_feeds.append(video_feed)
         logger.info(f"\t...Done! Video feed from {video_source[0]} source (reflink: {video_source[1]}) loaded and assigned ID number: {video_feed.id_no}...")
     logger.info(f"...Done! All video feed connections have been established!")
+    logger.info(f"Spawning feed processor threads for all video feeds...")
+    for video_feed in video_feeds:
+        video_feed.process()
+    logger.info(f"...Done! Feed processor subprocesses have been started and are awaiting command")
     input("Press [ENTER] to continue...")
     signaller.signal("START")
     signaller.signal("ENABLEDISPLAY")
@@ -40,6 +44,8 @@ def main(debug, config, logger, sources):
     signaller.signal("DISABLEDISPLAY")
     signaller.signal("STOP")
     signaller.signal("SHUTDOWN")
+
+    return None
 
 # Begin execution
 if __name__ == "__main__":
@@ -55,11 +61,11 @@ if __name__ == "__main__":
         )
     except getopt.GetoptError as err_msg:
         raise err_msg
-        
+
     debug = False
     config_file = "config/motion-detection-program.ini"
     sources = []
-    
+
     for opt, arg in opts:
         if opt in ("-h", "--help"):
             print(f"USAGE:")
@@ -81,7 +87,7 @@ if __name__ == "__main__":
             if not os.path.isfile(arg):
                 raise FileNotFoundError
             config_file = arg
-            
+
     if len(args) < 1:
         raise Exception
     for arg in args:
@@ -91,16 +97,16 @@ if __name__ == "__main__":
         if stype not in datatypes.SOURCETYPES:
             raise ValueError
         sources.append((stype, sref))
-        
+
     config = configparser.ConfigParser()
     config.read(config_file)
-    
+
     logging.basicConfig(
         level=logging.DEBUG if debug else logging.INFO,
         format="%(asctime)s - %(levelname)s - %(message)s",
     )
     logger = logging.getLogger()
-        
+
     main(debug, config, logger, sources)
-            
-    
+
+
