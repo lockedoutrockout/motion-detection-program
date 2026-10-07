@@ -23,7 +23,6 @@ class Signal(object):
         self.sscope = sscope
         self.sts = time.time_ns()
 
-
 class Signaller(object):
     """ Used to send signals to video feed controllers
     """
@@ -59,10 +58,10 @@ class Signaller(object):
 class SignalMonitor(object):
     """ Used to monitor for signals
     """
-    def __init__(self, parent, signaller):
-        self.parent = parent
+    def __init__(self, feed_state, signaller, logger=None):
+        self.logger = logger
+        self.feed_state = feed_state
         self.signaller = signaller
-        self.logger = self.parent.logger
         self.id_no = self.signaller.register_listener(self)
         self.signals = []
         self.logger.debug(f"New SignalMonitor object initialized and registered with Signaller. Assigned ID {self.id_no}")
@@ -73,24 +72,22 @@ class SignalMonitor(object):
         def _thread(signal):
             """ Signal handler thread target
             """
-            self.logger.debug(f"SignalMonitor with ID {self.id_no} passed new Signal to it's handler thread. Context of parent pre-processing: _do_processing={parent._do_processing}, _show_feed={parent._show_feed}, _shutdown={parent._shutdown}")
             if signal.stype == "START":
-                setattr(self.parent, "_do_processing", True)
+                self.feed_state.do_processing.set()
             elif signal.stype == "STOP":
-                setattr(self.parent, "_do_processing", False)
+                self.feed_state.do_processing.unset()
             elif signal.stype == "ENABLEDISPLAY":
-                setattr(self.parent, "_show_feed", True)
+                self.feed_state.show_feed.set()
             elif signal.stype == "DISABLEDISPLAY":
-                setattr(self.parent, "_show_feed", False)
+                self.feed_state.show_feed.unset()
             elif signal.stype == "SHUTDOWN":
-                setattr(self.parent, "_shutdown", True)
-            self.logger.debug(f"SignalMonitor with ID {self.id_no} processed new Signal with it's handler thread. Context of parent post-processing: _do_processing={parent._do_processing}, _show_feed={parent._show_feed}, _shutdown={parent._shutdown}")
+                self.feed_state.shutdown.set()
 
         self.signals.append(signal)
         self.logger.debug(f"SignalMonitor object with ID {self.id_no} received new incoming Signal. stype={signal.stype}, smsg={signal.smsg}, sscope={signal.sscope}")
         threading.Thread(
             target=_thread,
-            args=(signal),
+            args=(signal,),
             daemon=True
         ).start()
         return None

@@ -20,15 +20,15 @@ from . import datatypes
 class FeedProcessor(multiprocessing.Process):
     """ Video feed processor
     """
-    def __init__(self, parent, video_source, debug=None, config=None, logger=None):
+    def __init__(self, video_source, feed_state, debug=None, config=None, logger=None):
         self.debug = debug
         self.config = config
         self.logger = logger
-        self.parent = parent
         self.video_source = video_source
+        self.feed_state = feed_state
 
     def run(self):
-        while not self.parent._shutdown_event.is_set():
+        while not self.feed_state.shutdown.is_set():
             #self.logger.debug(f"VideoFeed object with ID {self.id_no} has entered it's process() method from processing thread started by object's main logic thread")
             #self.logger.debug(f"Current context of VideoFeed object with ID {self.id_no} from inside process() method: _do_processing={self._do_processing}, _show_feed={self._show_feed}, _shutdown={self._shutdown}")
             # Unpack various values related to the motion detection algorithm from the configuration data
@@ -43,9 +43,9 @@ class FeedProcessor(multiprocessing.Process):
             reference_frames_taken = 0
             c = 0
 
-            while not getattr(self.parent, "_do_processing"):
+            while not self.feed_state.do_processing.is_set():
                 continue
-            while getattr(self.parent, "_do_processing"):
+            while self.feed_state.do_processing.is_set()
                 #self.logger.debug(f"VideoFeed object with ID {self.id_no} has entered processing loop of it's process() method")
                 _, frame = vs.read()
 
@@ -97,7 +97,7 @@ class FeedProcessor(multiprocessing.Process):
                     self.logger.debug(f"Motion detected in frame {frame_number} in {areas_with_motion} area(s)")
 
                 # Display video
-                if self._show_feed:
+                if self.feed_state.show_feed.is_set():
                     #self.logger.debug(f"VideoFeed object with ID {self.id_no} has entered video feed display block of it's process() method")
                     cv2.imshow(f"Bebop's Motion Detection Program ({self.video_source[0]} <{self.video_source[1]}>)", frame)
                     # DEBUGGING
@@ -115,9 +115,17 @@ class FeedProcessor(multiprocessing.Process):
 
         # Exit from the function cleanly
         #self.logger.debug(f"VideoFeed object with ID {self.id_no} has left the main processing loop of it's process() method")
-        if self._show_feed:
+        if self.feed_state.show_feed.is_set():
             cv2.destroyAllWindows()
         return None
+
+class VideoFeedState(object):
+    """ Facilitates IPC between the VideoFeed object and its FeedProcessor process
+    """
+    def __init__(self):
+        self.do_processing = multiprocessing.Event()
+        self.show_feed = multiprocessing.Event()
+        self.shutdown = multiprocessing.Event()
 
 
 class VideoFeed(object):
@@ -130,15 +138,10 @@ class VideoFeed(object):
 
         self.video_source = video_source
         self.signaller = signaller
+        self.feed_state = VideoFeedState()
         self.signal_monitor = datatypes.SignalMonitor(self, self.signaller)
         self.id_no = self.signal_monitor.id_no
-        self.feed_processor = FeedProcessor(self, self.video_source, debug=self.debug, config=self.config, logger=self.logger)
-        self._shutdown_event = multiprocessing.Event()
-        self._feed_processor = multiprocessing.Process(target=self.feed_processor)
-        self._do_processing = False
-        self._show_feed = False
-        self._shutdown = False
-
+        self.feed_processor = FeedProcessor(self.video_source, self.feed_state, debug=self.debug, config=self.config, logger=self.logger)
         self.logger.debug(f"Initialized new VideoFeed object for {self.video_source[0]} source (reflink: {self.video_source[1]}) assigned ID: {self.id_no}")
 
     def process(self):
@@ -153,7 +156,7 @@ class VideoFeed(object):
             self._feed_processor.join()
             return None
 
-        self._feed_processor.start()
+        self.feed_processor.start()
         threading.Thread(target=_thread, daemon=True).start()
-        return self._feed_processor.is_alive()
+        return self.feed_processor.is_alive()
 
