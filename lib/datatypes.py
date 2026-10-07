@@ -75,11 +75,11 @@ class SignalMonitor(object):
             if signal.stype == "START":
                 self.feed_state.do_processing.set()
             elif signal.stype == "STOP":
-                self.feed_state.do_processing.unset()
+                self.feed_state.do_processing.clear()
             elif signal.stype == "ENABLEDISPLAY":
                 self.feed_state.show_feed.set()
             elif signal.stype == "DISABLEDISPLAY":
-                self.feed_state.show_feed.unset()
+                self.feed_state.show_feed.clear()
             elif signal.stype == "SHUTDOWN":
                 self.feed_state.shutdown.set()
 

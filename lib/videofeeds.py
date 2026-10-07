@@ -21,6 +21,7 @@ class FeedProcessor(multiprocessing.Process):
     """ Video feed processor
     """
     def __init__(self, video_source, feed_state, debug=None, config=None, logger=None):
+        super().__init__()
         self.debug = debug
         self.config = config
         self.logger = logger
@@ -139,7 +140,7 @@ class VideoFeed(object):
         self.video_source = video_source
         self.signaller = signaller
         self.feed_state = VideoFeedState()
-        self.signal_monitor = datatypes.SignalMonitor(self, self.signaller)
+        self.signal_monitor = datatypes.SignalMonitor(self.feed_state, self.signaller)
         self.id_no = self.signal_monitor.id_no
         self.feed_processor = FeedProcessor(self.video_source, self.feed_state, debug=self.debug, config=self.config, logger=self.logger)
         self.logger.debug(f"Initialized new VideoFeed object for {self.video_source[0]} source (reflink: {self.video_source[1]}) assigned ID: {self.id_no}")
@@ -147,16 +148,6 @@ class VideoFeed(object):
     def process(self):
         """ Main video processing loop
         """
-        def _thread():
-            """ Shutdown monitor thread
-            """
-            while not self._shutdown:
-                continue
-            self._feed_processor.terminate()
-            self._feed_processor.join()
-            return None
-
         self.feed_processor.start()
-        threading.Thread(target=_thread, daemon=True).start()
         return self.feed_processor.is_alive()
 
