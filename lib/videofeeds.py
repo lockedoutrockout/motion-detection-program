@@ -29,24 +29,36 @@ class FeedProcessor(multiprocessing.Process):
         self.feed_state = feed_state
 
     def run(self):
+        # Open the video source
+        if self.video_source[0] == "webcam":
+            vs = cv2.VideoCapture(int(self.video_source[1]))
+        else:
+            vs = cv2.VideoCapture(self.video_source[1])
+
+        if not vs.isOpened():
+            self.logger.error(f"Failed to open video feed for {self.video_source[0]} source (reflink: {self.video_source[1]})")
+            return None
         while not self.feed_state.shutdown.is_set():
             #self.logger.debug(f"VideoFeed object with ID {self.id_no} has entered it's process() method from processing thread started by object's main logic thread")
             #self.logger.debug(f"Current context of VideoFeed object with ID {self.id_no} from inside process() method: _do_processing={self._do_processing}, _show_feed={self._show_feed}, _shutdown={self._shutdown}")
             # Unpack various values related to the motion detection algorithm from the configuration data
             sensitivity = int(self.config["DEFAULT"]["sensitivity"])
             reference_frame_reset_interval = int(self.config["DEFAULT"]["reference_frame_reset_interval"])
-
-            # Open the video source and go through it frame by frame
-            vs = cv2.VideoCapture(self.video_source[1])
             frame_number = 0
             frames_with_motion = [] # [(frame_number, original_frame)]
             reference_frame = None
             reference_frames_taken = 0
             c = 0
 
-            while not self.feed_state.do_processing.is_set():
-                continue
-            while self.feed_state.do_processing.is_set()
+            # while (
+                # not self.feed_state.do_processing.is_set()
+                # and not self.feed_state.shutdown.is_set()
+            # ):
+                # continue
+            self.feed_state.do_processing.wait()
+            if self.feed_state.shutdown.is_set():
+                break
+            while self.feed_state.do_processing.is_set():
                 #self.logger.debug(f"VideoFeed object with ID {self.id_no} has entered processing loop of it's process() method")
                 _, frame = vs.read()
 
@@ -116,6 +128,7 @@ class FeedProcessor(multiprocessing.Process):
 
         # Exit from the function cleanly
         #self.logger.debug(f"VideoFeed object with ID {self.id_no} has left the main processing loop of it's process() method")
+        vs.release()
         if self.feed_state.show_feed.is_set():
             cv2.destroyAllWindows()
         return None
@@ -140,7 +153,7 @@ class VideoFeed(object):
         self.video_source = video_source
         self.signaller = signaller
         self.feed_state = VideoFeedState()
-        self.signal_monitor = datatypes.SignalMonitor(self.feed_state, self.signaller)
+        self.signal_monitor = datatypes.SignalMonitor(self.feed_state, self.signaller, logger=self.logger)
         self.id_no = self.signal_monitor.id_no
         self.feed_processor = FeedProcessor(self.video_source, self.feed_state, debug=self.debug, config=self.config, logger=self.logger)
         self.logger.debug(f"Initialized new VideoFeed object for {self.video_source[0]} source (reflink: {self.video_source[1]}) assigned ID: {self.id_no}")
